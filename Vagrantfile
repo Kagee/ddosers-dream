@@ -23,7 +23,8 @@ Vagrant.configure("2") do |config|
     override.vm.box = 'digital_ocean'
     override.vm.box_url = "https://github.com/smdahlen/vagrant-digitalocean/raw/master/box/digital_ocean.box"
 
-    provider.token = 'Get your token at https://cloud.digitalocean.com/settings/applications -> Personal Access Tokens'
+    # Get your token at https://cloud.digitalocean.com/settings/applications -> Personal Access Tokens
+    provider.token = ENV['DO_TOKEN']
     provider.image = 'Ubuntu 14.04 x64'
     provider.region = 'ams1'
     provider.size = '512mb'
