@@ -1,5 +1,5 @@
-# For å slippe advarsler om manglende locale om vi
-# ssher inn fra et norsk system
+# To prevent warnings about missing locales if we 
+# SSH from a norwegian system 
 apt-get install --yes language-pack-nb
 
 # Install and enable chargen
@@ -23,9 +23,11 @@ service dnsmasq stop
 service dnsmasq start
 
 # qotd - quote of the day
-# Så lite forskjell til chargen at vi ignorerer
+# So simmilar to chargen that we ignore it.
 
 # netbios
+apt-get install --yes samba
+
 
 # snmp
 apt-get install --yes snmpd
@@ -40,7 +42,7 @@ service snmpd start
 apt-get install --yes mediatomb
 service mediatomb start
 
-# ipmi - mulig ?
+# ipmi - possible?
 
 apt-get install --yes vim most tshark # for development
 
@@ -53,10 +55,11 @@ echo "NTP MONLIST:  ntpdc -n -c monlist $IP"
 echo 'CHARGEN:      echo "" | nc -q 2 -u '$IP' 19'
 echo "DNS:          dig +short test.openresolver.com TXT @$IP"
 echo "SNMP:         snmpget -c public -v 2c $IP 1.3.6.1.2.1.1.1.0"
+echo "NETBIOS:      nmblookup -A $IP"
 echo "SSDP:"
 echo "echo -n -e \"M-SEARCH * HTTP/1.1\\\r\\\n\"\\"
 echo "\"Host:239.255.255.250:1900\\\r\\\n\"\\"
 echo "\"ST:upnp:rootdevice\\\r\\\n\"\\"
 echo "\"Man:\\\"ssdp:discover\\\"\\\r\\\n\"\\"
 echo "\"MX:3\\\r\\\n\\\r\\\n\" | \\"
-echo "nc -q 1 -p 1900 -s 172.16.201.1 -u 172.16.201.176 1900"
+echo "nc -q 1 -p 1900 -s <SRC_IP> -u $IP 1900"
