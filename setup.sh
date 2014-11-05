@@ -1,5 +1,8 @@
 # To prevent warnings about missing locales if we 
 # SSH from a norwegian system 
+
+apt-get update --yes
+
 apt-get install --yes language-pack-nb
 
 # Install and enable chargen
