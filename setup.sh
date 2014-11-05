@@ -51,7 +51,7 @@ cat /etc/snmp/snmpd.conf.tmp >> /etc/snmp/snmpd.conf
 service snmpd start
 
 # ssdp
-apt-get install --yes mediatomb
+apt-get install --yes mediatomb-daemon
 service mediatomb start
 
 # ipmi - possible?
