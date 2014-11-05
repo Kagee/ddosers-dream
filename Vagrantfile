@@ -9,9 +9,9 @@
 
 Vagrant.configure("2") do |config|
 
-  #Ubuntu 14.04 Server 64-bit box supporting VirtualBox and VMware providers. 
-  config.vm.box = "misheska/ubuntu1404"
-
+  # Ubuntu 14.04 Server 64-bit box supporting VirtualBox and VMware providers. 
+  # For other boxes, see https://vagrantcloud.com/box-cutter
+  config.vm.box = "box-cutter/ubuntu1404"
   config.vm.hostname = "horrible.ddos.server.com"
   config.vm.provision "shell", path: 'setup.sh'
 
