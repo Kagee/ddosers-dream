@@ -4,7 +4,7 @@ if [[ "$#" -eq 1 ]]; then
   function VERB { return; }
 elif [[ "$#" -eq 2 ]]; then
   SIP=$2
-  function VERB { echo "$1"; }
+  function VERB { UGLY "$1"; }
 else
   echo "Usage:"
   echo "$0 -v <ip> (verbose)"
@@ -12,20 +12,26 @@ else
   exit
 fi
 function GOOD {
-  echo -e "\e[32m\e[1mGOOD: $1\e[0m"
+  echo -e "\e[32m\e[1m$1\e[0m"
 }
 function BAD {
-  echo -e "\e[31m\e[1mBAD: $1\e[0m"
+  echo -e "\e[31m\e[1m$1\e[0m"
 }
 function UGLY {
-  echo -e >&2 "\e[33m\e[1mUGLY: $1\e[0m"
+  echo -e >&2 "\e[33m\e[1m$1\e[0m"
 }
 
 function readvar {
     # NTP READVAR
     if [ $(hash ntpq 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing NTP READVAR";
-      ntpq -c rv $1
+      GOOD "Testing NTP READVAR";
+      R=$(ntpq -c rv $1 2>&1)
+      VERB "$R"
+      if [ $(echo "$R" | grep -q "nothing received"; echo $?) -ne 0 ]; then
+        BAD "The NTP service at $1:123 responds to READVAR requests"
+      else
+        GOOD "The NTP service at $1:123 does not respond to READVAR requests"
+      fi
     else
       UGLY "I require ntpq to test NTP READVAR, but it's not installed.";
     fi
@@ -34,8 +40,15 @@ function readvar {
 function monlist {
     # NTP MONLIST
     if [ $(hash ntpdc 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing NTP MONLIST";
-      ntpdc -n -c monlist $1
+      GOOD "Testing NTP MONLIST";
+      R=$(ntpdc -n -c monlist $1 2>&1)
+      VERB "$R"
+      if [ $(echo "$R" | grep -q "nothing received"; echo $?) -ne 0 ]; then
+        BAD "The NTP service at $1:123 responds to MONLIST requests"
+      else
+        GOOD "The NTP service at $1:123 does not respond to MONLIST requests"
+      fi
+
     else
       UGLY "I require ntpdc to test NTP MONLIST, but it's not installed.";
     fi
@@ -44,7 +57,7 @@ function monlist {
 function opensesolver {
     # DNS OPENRESOLVER
     if [ $(hash dig 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing DNS OPENRESOLVER";
+      GOOD "Testing DNS OPENRESOLVER";
       R=$(dig +short test.openresolver.com TXT @$1)
       VERB "$R"  
       if [ $(echo "$R" | grep -q open-resolver-detected; echo $?) -eq 0 ]; then
@@ -60,7 +73,7 @@ function opensesolver {
 function snmp {
     #SNMP
     if [ $(hash snmpget 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing SNMP";
+      GOOD "Testing SNMP";
       R=$(snmpget -c public -v 2c $1 1.3.6.1.2.1.1.1.0)
       VERB "$R"  
       if [ $(echo "$R" | grep -q 'Linux horrible.ddos.server.com'; echo $?) -eq 0 ]; then
@@ -76,18 +89,22 @@ function snmp {
 function netbios {
     # NETBIOS
     if [ $(hash nmblookup 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing NETBIOS";
-      nmblookup -A $1
+      GOOD "Testing NETBIOS";
+      R=$(nmblookup -A $1)
+      VERB "$R"
+      if [ $(echo "$R" | grep -q 'HORRIBLE'; echo $?) -eq 0 ]; then
+        BAD "The netbios service at $1:137 responds to queries"
+      else
+        BAD "The netbios service at $1:137 does not responds to queries"
+      fi
     else
       UGLY "I require nmblookup to test NETBIOS, but it's not installed.";
     fi
 }
 
 function chargen {
-    # CHARGEN
-    #SSDP
     if [ $(hash nc 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing CHARGEN";
+      GOOD "Testing CHARGEN";
       R=$(echo "" | nc -q 2 -u $1 19)
       VERB "$R"
       if [ $(echo "$R" | grep -q 'ABCDEFG'; echo $?) -eq 0 ]; then
@@ -103,7 +120,7 @@ function chargen {
 function ssdp {
     #SSDP
     if [ $(hash nc 2>/dev/null; echo $?) -eq 0 ]; then
-      echo "Testing SSDP";
+      GOOD "Testing SSDP";
       UGLY "I don't know how to test SSDP...."
       #R=$(echo "" | nc -q 2 -u $1 19)
       #VERB "$R"
@@ -127,9 +144,9 @@ function ssdp {
 }
 
 #readvar $SIP
-#monlist $SIP
+monlist $SIP
 #opensesolver $SIP
 #snmp $SIP
-netbios $SIP
+#netbios $SIP
 #chargen $SIP
-#ssdp
+#ssdp $SIP
