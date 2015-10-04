@@ -21,13 +21,13 @@ function UGLY {
   echo -e >&2 "\e[33m\e[1m$1\e[0m"
 }
 
-function readvar {
+function _readvar {
     # NTP READVAR
     if [ $(hash ntpq 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing NTP READVAR";
-      R=$(ntpq -c rv $1 2>&1)
+      R=$(ntpq -c rv $1 2>&1; echo $?)
       VERB "$R"
-      if [ $(echo "$R" | grep -q "nothing received"; echo $?) -ne 0 ]; then
+      if [ $(echo "$R" | grep -q -E "nothing received|Connection refused"; echo $?) -ne 0 ]; then
         BAD "The NTP service at $1:123 responds to READVAR requests"
       else
         GOOD "The NTP service at $1:123 does not respond to READVAR requests"
@@ -37,13 +37,13 @@ function readvar {
     fi
 }
 
-function monlist {
+function _monlist {
     # NTP MONLIST
     if [ $(hash ntpdc 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing NTP MONLIST";
-      R=$(ntpdc -n -c monlist $1 2>&1)
+      R=$(ntpdc -n -c monlist $1 2>&1; echo $?)
       VERB "$R"
-      if [ $(echo "$R" | grep -q "nothing received"; echo $?) -ne 0 ]; then
+      if [ $(echo "$R" | grep -q "nothing received|Connection refused"; echo $?) -ne 0 ]; then
         BAD "The NTP service at $1:123 responds to MONLIST requests"
       else
         GOOD "The NTP service at $1:123 does not respond to MONLIST requests"
@@ -54,70 +54,70 @@ function monlist {
     fi
 }
 
-function opensesolver {
+function _openresolver {
     # DNS OPENRESOLVER
     if [ $(hash dig 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing DNS OPENRESOLVER";
-      R=$(dig +short test.openresolver.com TXT @$1)
+      R=$(dig +short test.openresolver.com TXT @$1 2>&1)
       VERB "$R"  
       if [ $(echo "$R" | grep -q open-resolver-detected; echo $?) -eq 0 ]; then
-        BAD "The DNS service at $1:53 is a open resolver"
+        BAD "The DNS service at $1:53 is an open resolver"
       else
-        GOOD "The DNS service at $1:53 is a open resolver"
+        GOOD "The DNS service at $1:53 is not an open resolver"
       fi
     else
       UGLY "I require dig to test DNS OPENRESOLVER, but it's not installed.";
     fi
 }
 
-function snmp {
+function _snmp {
     #SNMP
     if [ $(hash snmpget 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing SNMP";
-      R=$(snmpget -c public -v 2c $1 1.3.6.1.2.1.1.1.0)
+      R=$(snmpget -c public -v 2c $1 1.3.6.1.2.1.1.1.0 2>&1)
       VERB "$R"  
-      if [ $(echo "$R" | grep -q 'Linux horrible.ddos.server.com'; echo $?) -eq 0 ]; then
+      if [ $(echo "$R" | grep -q 'iso.3.6.1.2.1.1.1.0'; echo $?) -eq 0 ]; then
         BAD "The SNMP service at $1 responds to queries"
       else
-        BAD "The SNMP service at $1 does not appear to respond to queries"
+        GOOD "The SNMP service at $1 does not respond to queries"
       fi
     else
       UGLY "I require snmpget to test SNMP, but it's not installed.";
     fi
 }
 
-function netbios {
+function _netbios {
     # NETBIOS
     if [ $(hash nmblookup 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing NETBIOS";
-      R=$(nmblookup -A $1)
+      R=$(nmblookup -A $1 2>&1)
       VERB "$R"
-      if [ $(echo "$R" | grep -q 'HORRIBLE'; echo $?) -eq 0 ]; then
+      if [ $(echo "$R" | grep -q 'No reply'; echo $?) -ne 0 ]; then
         BAD "The netbios service at $1:137 responds to queries"
       else
-        BAD "The netbios service at $1:137 does not responds to queries"
+        GOOD "The netbios service at $1:137 does not responds to queries"
       fi
     else
       UGLY "I require nmblookup to test NETBIOS, but it's not installed.";
     fi
 }
 
-function chargen {
+function _chargen {
     if [ $(hash nc 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing CHARGEN";
-      R=$(echo "" | nc -q 2 -u $1 19)
+      R=$(echo "" | nc -q 2 -u $1 19 2>&1)
       VERB "$R"
       if [ $(echo "$R" | grep -q 'ABCDEFG'; echo $?) -eq 0 ]; then
         BAD "The chargen service at $1:19 responds to queries"
       else
-        BAD "The chargen service at $1:19 does not responds to queries"
+        GOOD "The chargen service at $1:19 does not responds to queries"
       fi
     else
       UGLY "I require nc to test CHARGEN, but it's not installed.";
     fi
 }
 
-function ssdp {
+function _ssdp {
     #SSDP
     if [ $(hash nc 2>/dev/null; echo $?) -eq 0 ]; then
       GOOD "Testing SSDP";
@@ -143,10 +143,16 @@ function ssdp {
     fi
 }
 
-#readvar $SIP
-monlist $SIP
-#opensesolver $SIP
-#snmp $SIP
-#netbios $SIP
-#chargen $SIP
-#ssdp $SIP
+NAME=$(basename "$0")
+
+if [ $(declare -f -F "_$NAME" > /dev/null; echo $?) -eq 0 ]; then
+ _$NAME $SIP
+else
+  _readvar $SIP
+  _monlist $SIP
+  _openresolver $SIP
+  _snmp $SIP
+  _netbios $SIP
+  _chargen $SIP
+  _ssdp $SIP
+fi
